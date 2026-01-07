@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ashur 애니메이션 컨트롤</title>
+  <link rel="stylesheet" href="control-styles.css">
+</head>
+<body>
+  <div class="control-panel">
+    <header>
+      <h1>🎮 Ashur 컨트롤</h1>
+      <p class="subtitle">애니메이션 설정 및 제어</p>
+    </header>
+
+    <div class="section">
+      <h2>📊 현재 상태</h2>
+      <div class="status-grid">
+        <div class="status-item">
+          <span class="label">현재 애니메이션:</span>
+          <span class="value" id="current-animation">-</span>
+        </div>
+        <div class="status-item">
+          <span class="label">현재 스킨:</span>
+          <span class="value" id="current-skin">-</span>
+        </div>
+        <div class="status-item">
+          <span class="label">이동 모드:</span>
+          <span class="value" id="movement-mode-status">비활성화</span>
+        </div>
+        <div class="status-item">
+          <span class="label">캐릭터 표시:</span>
+          <span class="value" id="visibility-status">표시</span>
+        </div>
+      </div>
+      <div style="margin-top: 8px; font-size: 11px; color: #888; text-align: center;">
+        💡 캐릭터를 언제든지 드래그할 수 있습니다
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🎨 스킨 선택</h2>
+      <div class="inline-row">
+        <select id="skin-select" class="select-box inline-select">
+          <option value="">로딩 중...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🎬 애니메이션 선택</h2>
+      <div class="inline-row">
+        <select id="animation-select" class="select-box inline-select">
+          <option value="">로딩 중...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📏 크기 조절</h2>
+      <div class="control-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 13px; color: #666;">30%</span>
+          <span id="scale-value" style="font-size: 15px; font-weight: 600; color: #667eea;">100%</span>
+          <span style="font-size: 13px; color: #666;">100%</span>
+        </div>
+        <input type="range" id="scale-slider" min="0.3" max="1.0" step="0.05" value="1.0" 
+               style="width: 100%; cursor: pointer;">
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>⚙️ 재생 설정</h2>
+      <div class="control-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="auto-play" checked>
+          <span>랜덤 재생</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>👁️ 표시 제어</h2>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button id="toggle-visibility" class="btn btn-secondary">
+          <span id="visibility-button-text">👻 캐릭터 숨기기</span>
+        </button>
+      </div>
+      <div style="margin-top: 8px; font-size: 11px; color: #666; text-align: center;">
+        단축키: <strong>Alt+H</strong> (표시/숨김)
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📍 위치 제어</h2>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button id="toggle-movement-mode" class="btn btn-primary">
+          <span id="movement-button-text">🎯 이동 모드 열기</span>
+        </button>
+      </div>
+      <div style="margin-top: 8px; font-size: 11px; color: #666; text-align: center;">
+        단축키: <strong>Alt+M</strong> (이동 모드)
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-actions">
+        <button id="quit-app" class="btn btn-danger btn-quit">프로그램 종료</button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="control.js"></script>
+</body>
+</html>

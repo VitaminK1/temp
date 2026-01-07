@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval';">
+  <title>Ashur Desktop Animation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Spine 애니메이션 컨테이너 -->
+  <div id="spine-container">
+    <div class="loading">Ashur 로딩 중...</div>
+  </div>
+  
+  <!-- Spine Player 라이브러리 로드 -->
+  <script src="../spine-assets/spine-player.min.js"></script>
+  
+  <!-- 메인 렌더러 스크립트 -->
+  <script src="renderer.js"></script>
+</body>
+</html>

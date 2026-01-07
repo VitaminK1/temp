@@ -1,0 +1,42 @@
+{
+  "name": "desktop-ashur-animation",
+  "version": "1.0.0",
+  "description": "Ashur character transparent desktop animation",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start-win": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\start-win.ps1",
+    "build": "electron-builder",
+    "dev": "electron . --enable-logging"
+  },
+  "keywords": [
+    "electron",
+    "spine",
+    "desktop",
+    "animation",
+    "ashur"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.desktop.ashuranimation",
+    "productName": "Ashur Desktop Animation",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "spine-assets/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "icon.ico"
+    }
+  }
+}
