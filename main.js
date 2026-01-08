@@ -23,7 +23,7 @@ function createWindow() {
     y: startY,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,           // 항상 위에 표시
+    alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
     movable: true,
@@ -48,6 +48,7 @@ function createWindow() {
     mainWindow.setSkipTaskbar(true);
   }
   
+  // 초기에는 마우스 이벤트 무시하지 않음
   mainWindow.setIgnoreMouseEvents(false);
 
   Menu.setApplicationMenu(null);
@@ -81,6 +82,9 @@ function createWindow() {
     console.log('Ashur 애니메이션 로드 완료');
     createControlWindow();
     registerGlobalShortcuts();
+    
+    // 히트 테스트 설정 (중요!)
+    setupHitTest();
   });
 }
 
@@ -128,10 +132,16 @@ function registerGlobalShortcuts() {
 
 function toggleMovementMode() {
   isMovementMode = !isMovementMode;
+  isInMovementMode = isMovementMode; // 전역 상태 동기화
   
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('movement-mode-changed', isMovementMode);
     console.log(`이동 모드: ${isMovementMode ? '활성화' : '비활성화'}`);
+    
+    // 이동 모드일 때는 전체 창 드래그 가능
+    if (isMovementMode) {
+      mainWindow.setIgnoreMouseEvents(false);
+    }
     
     if (controlWindow && !controlWindow.isDestroyed()) {
       controlWindow.webContents.send('movement-mode-status', isMovementMode);
@@ -141,10 +151,18 @@ function toggleMovementMode() {
 
 function toggleCharacterVisibility() {
   isCharacterHidden = !isCharacterHidden;
+  isCharacterVisible = !isCharacterHidden; // 전역 상태 동기화
   
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('visibility-changed', !isCharacterHidden);
     console.log(`캐릭터 표시: ${isCharacterHidden ? '숨김' : '표시'}`);
+    
+    // 캐릭터가 숨겨지면 클릭 통과
+    if (isCharacterHidden) {
+      mainWindow.setIgnoreMouseEvents(true, { forward: true });
+    } else {
+      mainWindow.setIgnoreMouseEvents(false);
+    }
     
     if (controlWindow && !controlWindow.isDestroyed()) {
       controlWindow.webContents.send('visibility-status', !isCharacterHidden);
@@ -212,6 +230,27 @@ function changePositionCorner(corner) {
     
     mainWindow.setPosition(newX, newY, true);
     console.log(`${corner}로 이동: (${newX}, ${newY})`);
+  }
+}
+
+let isInMovementMode = false;
+let isCharacterVisible = true;
+
+function setupHitTest() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  
+  if (process.platform === 'win32') {
+    // Windows: hookWindowMessage 사용
+    mainWindow.hookWindowMessage(0x0084, () => {
+      if (isInMovementMode || !isCharacterVisible) {
+        mainWindow.setIgnoreMouseEvents(false);
+      }
+    });
+    console.log('✅ Windows 히트 테스트 설정 완료');
+  } else {
+    // macOS/Linux: 간단한 영역 기반 처리
+    console.log('⚠️ macOS/Linux에서는 전체 창이 드래그 가능합니다');
+    mainWindow.setIgnoreMouseEvents(false);
   }
 }
 
@@ -323,6 +362,31 @@ function setupIpcHandlers() {
     }
   });
 
+  ipcMain.on('toggle-devtools-main', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.webContents.isDevToolsOpened()) {
+        mainWindow.webContents.closeDevTools();
+        console.log('메인 창 개발자 도구 닫기');
+      } else {
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
+        console.log('메인 창 개발자 도구 열기');
+      }
+    }
+  });
+
+  // 개발자 도구 토글 (컨트롤 창)
+  ipcMain.on('toggle-devtools-control', () => {
+    if (controlWindow && !controlWindow.isDestroyed()) {
+      if (controlWindow.webContents.isDevToolsOpened()) {
+        controlWindow.webContents.closeDevTools();
+        console.log('컨트롤 창 개발자 도구 닫기');
+      } else {
+        controlWindow.webContents.openDevTools({ mode: 'detach' });
+        console.log('컨트롤 창 개발자 도구 열기');
+      }
+    }
+  });
+
   ipcMain.on('quit-app', () => {
     console.log('Quit requested from control window');
     app.quit();
@@ -332,7 +396,6 @@ function setupIpcHandlers() {
   ipcMain.on('set-ignore-mouse', (event, payload) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       try {
-        // payload may be boolean or object { ignore, options }
         let ignoreVal = false;
         let opts = { forward: true };
 
@@ -345,8 +408,10 @@ function setupIpcHandlers() {
           ignoreVal = Boolean(payload);
         }
 
-        // Ensure forward is enabled by default so renderer still receives mousemove events
-        if (!Object.prototype.hasOwnProperty.call(opts, 'forward')) opts.forward = true;
+        // forward 옵션 보장
+        if (!Object.prototype.hasOwnProperty.call(opts, 'forward')) {
+          opts.forward = true;
+        }
 
         mainWindow.setIgnoreMouseEvents(ignoreVal, opts);
         console.log('setIgnoreMouseEvents ->', ignoreVal, opts);
@@ -355,6 +420,7 @@ function setupIpcHandlers() {
       }
     }
   });
+
 }
 
 app.whenReady().then(() => {

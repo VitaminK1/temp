@@ -167,6 +167,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setIgnoreMouseEvents: (ignore, options) => {
     ipcRenderer.send('set-ignore-mouse', { ignore: Boolean(ignore), options: options || {} });
   }
+  ,
+  toggleDevToolsMain: () => {
+    ipcRenderer.send('toggle-devtools-main');
+  },
+  
+  toggleDevToolsControl: () => {
+    ipcRenderer.send('toggle-devtools-control');
+  }
 });
 
 console.log('Preload script loaded for Ashur animation');

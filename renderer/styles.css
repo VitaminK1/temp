@@ -9,7 +9,6 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: transparent;
-  -webkit-app-region: no-drag;
   user-select: none;
 }
 
@@ -17,6 +16,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  pointer-events: none; /* body는 이벤트를 받지 않음 */
 }
 
 #spine-container {
@@ -28,20 +28,36 @@ body {
   background: transparent;
   position: relative;
   z-index: 0;
-  pointer-events: none;
+  pointer-events: none; /* container도 이벤트를 받지 않음 */
+  transform-origin: center center;
 }
 
-/* Spine player 캔버스 스타일 */
+/* Spine player 캔버스 - 이벤트를 받음 */
 #spine-container canvas {
   background: transparent !important;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  pointer-events: none;
+  pointer-events: auto !important; /* Canvas만 이벤트를 받음 */
 }
 
-/* 드래그 핸들 - 항상 표시되지만 투명 */
+/* 드래그 핸들 - 전체 화면, 기본적으로 이벤트 없음 */
 #drag-handle {
-  pointer-events: auto;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  z-index: 1;
+  cursor: move;
+  -webkit-app-region: drag;
+  pointer-events: none; /* 기본적으로 이벤트 없음 */
+}
+
+/* 이동 모드 오버레이 */
+#movement-overlay {
+  pointer-events: auto; /* 오버레이는 이벤트를 받음 */
+  -webkit-app-region: drag;
 }
 
 /* 로딩 메시지 */

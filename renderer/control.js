@@ -40,6 +40,10 @@ class ControlPanel {
     this.toggleVisibilityBtn = this.getElement('toggle-visibility');
     this.visibilityButtonText = this.getElement('visibility-button-text');
     this.quitAppBtn = this.getElement('quit-app');
+    
+    // 개발자 도구 버튼 추가
+    this.toggleDevToolsMainBtn = this.getElement('toggle-devtools-main');
+    this.toggleDevToolsControlBtn = this.getElement('toggle-devtools-control');
 
     // 크기 조절
     this.scaleSlider = this.getElement('scale-slider');
@@ -153,7 +157,23 @@ class ControlPanel {
         this.handleQuitApp();
       });
     }
+    if (this.toggleDevToolsMainBtn) {
+      this.toggleDevToolsMainBtn.addEventListener('click', () => {
+        if (this.api) {
+          this.api.toggleDevToolsMain();
+          this.log('캐릭터 창 개발자 도구 토글 요청');
+        }
+      });
+    }
 
+    if (this.toggleDevToolsControlBtn) {
+      this.toggleDevToolsControlBtn.addEventListener('click', () => {
+        if (this.api) {
+          this.api.toggleDevToolsControl();
+          this.log('컨트롤 창 개발자 도구 토글 요청');
+        }
+      });
+    }
     // 자동 재생 체크박스
     if (this.autoPlayCheck) {
       this.autoPlayCheck.addEventListener('change', () => {

@@ -51,166 +51,198 @@ class AshurDesktopPlayer {
    * 항상 표시되는 드래그 핸들 생성 (투명)
    */
   createDragHandle() {
-    this.dragHandle = document.createElement('div');
-    this.dragHandle.id = 'drag-handle';
-    this.dragHandle.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      z-index: 1;
-      cursor: move;
-      -webkit-app-region: drag;
-      pointer-events: none;
-    `;
-    
-    document.body.appendChild(this.dragHandle);
-    this.log('드래그 핸들 생성 완료');
-  }
+  this.dragHandle = document.createElement('div');
+  this.dragHandle.id = 'drag-handle';
+  this.dragHandle.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 1;
+    cursor: move;
+    -webkit-app-region: drag;
+    pointer-events: none;
+  `;
+  
+  document.body.appendChild(this.dragHandle);
+  console.log('✅ 드래그 핸들 생성 완료');
+  this.log('드래그 핸들 생성 완료');
+}
 
   /**
    * 픽셀 단위 투명도 감지 시작
    */
   startPixelDetection() {
-    // Canvas 요소 찾기
+  console.log('🎯 startPixelDetection() 호출됨');
+  console.log('렌더러 기반 픽셀 감지는 Electron 투명 창에서 제한적이므로');
+  console.log('main.js의 히트 테스트를 사용합니다.');
+  
+  // Canvas 확인만 수행
+  const findCanvas = (attempt = 0) => {
     this.canvas = this.container.querySelector('canvas');
     
     if (!this.canvas) {
-      this.log('Canvas를 찾을 수 없습니다. 1초 후 재시도...');
-      setTimeout(() => this.startPixelDetection(), 1000);
+      if (attempt < 5) {
+        setTimeout(() => findCanvas(attempt + 1), 1000);
+      }
       return;
     }
     
-    this.log('✅ Canvas 발견 - 픽셀 감지 시작');
-    
-    // 마우스 이벤트 리스너
-    let checkTimeout = null;
-    
-    const checkMousePosition = (e) => {
-      // 이동 모드일 때는 항상 드래그 가능
-      if (this.isMovementMode) {
-        this.setIgnoreMouseEvents(false);
-        return;
-      }
-      
-      // 캐릭터가 숨겨져 있으면 항상 통과
-      if (!this.isVisible) {
-        this.setIgnoreMouseEvents(true);
-        return;
-      }
-      
-      this.lastMouseX = e.clientX;
-      this.lastMouseY = e.clientY;
-      
-      // 디바운싱
-      if (checkTimeout) return;
-      
-      checkTimeout = setTimeout(() => {
-        this.checkTransparencyAtMouse(e.clientX, e.clientY);
-        checkTimeout = null;
-      }, 16); // ~60fps
-    };
-    
-    document.addEventListener('mousemove', checkMousePosition, { passive: true });
-    
-    // 초기 체크
-    this.checkTransparencyAtMouse(0, 0);
-    
-    this.log('마우스 이벤트 리스너 등록 완료');
-  }
+    console.log('✅ Canvas 발견:', this.canvas);
+    this.log('✅ Canvas 발견');
+  };
+  
+  findCanvas();
+}
 
   /**
    * 특정 좌표의 투명도 확인
    */
-  checkTransparencyAtMouse(mouseX, mouseY) {
-    if (!this.canvas || !this.isVisible || this.isMovementMode) return;
+checkTransparencyAtMouse(mouseX, mouseY) {
+  if (!this.canvas) {
+    console.log('🔴 Canvas가 없습니다');
+    return;
+  }
+  
+  if (!this.isVisible) {
+    console.log('🔴 캐릭터가 숨겨져 있습니다');
+    return;
+  }
+  
+  if (this.isMovementMode) {
+    console.log('🔴 이동 모드입니다');
+    return;
+  }
 
-    try {
-      const rect = this.canvas.getBoundingClientRect();
+  try {
+    const rect = this.canvas.getBoundingClientRect();
+    
+    console.log('📊 Canvas 정보:', {
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      bottom: rect.bottom,
+      mouse: { x: mouseX, y: mouseY }
+    });
 
-      // 마우스가 캔버스 영역 밖이면 통과 (and state diff)
-      if (mouseX < rect.left || mouseX > rect.right ||
-          mouseY < rect.top || mouseY > rect.bottom) {
-        if (this.isMouseOver !== false) {
-          this.isMouseOver = false;
-          this.setIgnoreMouseEvents(true, { forward: true });
-        }
-        return;
+    // 마우스가 캔버스 영역 밖이면 통과
+    if (mouseX < rect.left || mouseX > rect.right ||
+        mouseY < rect.top || mouseY > rect.bottom) {
+      console.log('✅ 마우스가 캔버스 밖 → 통과 모드');
+      if (this.isMouseOver !== false) {
+        this.isMouseOver = false;
+        this.setIgnoreMouseEvents(true, { forward: true });
       }
+      return;
+    }
 
-      // 캔버스 내부 좌표로 변환
-      const x = mouseX - rect.left;
-      const y = mouseY - rect.top;
+    // 캔버스 내부 좌표로 변환
+    const x = mouseX - rect.left;
+    const y = mouseY - rect.top;
 
-      // 캔버스 스케일 고려 (device pixel ratio included)
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
+    // 캔버스 스케일 고려
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
 
-      const canvasX = Math.floor(x * scaleX);
-      const canvasY = Math.floor(y * scaleY);
+    const canvasX = Math.floor(x * scaleX);
+    const canvasY = Math.floor(y * scaleY);
 
-      // 우선 시도: WebGL readPixels (Y축 보정 필요)
-      const gl = this.canvas.getContext('webgl2') || this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
-      const threshold = 10; // 알파 임계값
+    console.log('🎯 캔버스 좌표:', { canvasX, canvasY });
 
-      if (gl && typeof gl.readPixels === 'function') {
-        const glY = Math.max(0, this.canvas.height - canvasY - 1);
-        const pixel = new Uint8Array(4);
+    // 경계 체크
+    if (canvasX < 0 || canvasX >= this.canvas.width ||
+        canvasY < 0 || canvasY >= this.canvas.height) {
+      console.log('⚠️ 좌표가 경계 밖');
+      if (this.isMouseOver !== false) {
+        this.isMouseOver = false;
+        this.setIgnoreMouseEvents(true, { forward: true });
+      }
+      return;
+    }
+
+    const threshold = 10;
+
+    // WebGL readPixels 시도
+    const gl = this.canvas.getContext('webgl2') || 
+               this.canvas.getContext('webgl') || 
+               this.canvas.getContext('experimental-webgl');
+
+    if (gl && typeof gl.readPixels === 'function') {
+      const glY = this.canvas.height - canvasY - 1;
+      const pixel = new Uint8Array(4);
+      
+      try {
         gl.readPixels(canvasX, glY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
         const alpha = pixel[3];
         const isOpaque = alpha > threshold;
 
+        console.log(`🎨 WebGL 픽셀 - R:${pixel[0]} G:${pixel[1]} B:${pixel[2]} A:${alpha} → ${isOpaque ? '불투명' : '투명'} (임계값: ${threshold})`);
+
         if (isOpaque !== this.isMouseOver) {
           this.isMouseOver = isOpaque;
+          console.log(`🔄 상태 변경: ${isOpaque ? '클릭 가능' : '통과 모드'}`);
           if (isOpaque) {
             this.setIgnoreMouseEvents(false);
           } else {
             this.setIgnoreMouseEvents(true, { forward: true });
           }
+        } else {
+          console.log('✔️ 상태 유지:', isOpaque ? '클릭 가능' : '통과 모드');
         }
         return;
+      } catch (glError) {
+        console.error('❌ WebGL readPixels 오류:', glError);
       }
+    }
 
-      // Fallback: 2D getImageData if no GL context
-      const ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    // Fallback: 2D Context
+    console.log('📐 2D Context로 폴백');
+    const ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    if (ctx) {
       const imageData = ctx.getImageData(canvasX, canvasY, 1, 1);
       const alpha = imageData.data[3];
       const isOpaque = alpha > threshold;
 
+      console.log(`🎨 2D 픽셀 - A:${alpha} → ${isOpaque ? '불투명' : '투명'}`);
+
       if (isOpaque !== this.isMouseOver) {
         this.isMouseOver = isOpaque;
+        console.log(`🔄 상태 변경: ${isOpaque ? '클릭 가능' : '통과 모드'}`);
         if (isOpaque) {
           this.setIgnoreMouseEvents(false);
         } else {
           this.setIgnoreMouseEvents(true, { forward: true });
         }
       }
+    }
 
-    } catch (error) {
-      // 안전모드: 오류 발생 시 창이 마우스를 받게 한다(감지가 끊기는 문제 방지)
-      if (this.isMouseOver !== true) {
-        this.isMouseOver = true;
-        this.setIgnoreMouseEvents(false);
-      }
+  } catch (error) {
+    console.error('💥 오류 발생:', error);
+    if (this.isMouseOver !== true) {
+      this.isMouseOver = true;
+      this.setIgnoreMouseEvents(false);
     }
   }
+}
 
   /**
    * 마우스 이벤트 무시 설정
    */
   setIgnoreMouseEvents(ignore, options) {
-    // 중복 호출 방지
-    if (this._isIgnoringMouse === Boolean(ignore)) return;
-    this._isIgnoringMouse = Boolean(ignore);
+    const ignoreValue = Boolean(ignore);
+    
+    // 중복 호출 방지 - 하지만 options가 있으면 다시 호출
+    if (this._isIgnoringMouse === ignoreValue && !options) return;
+    
+    this._isIgnoringMouse = ignoreValue;
 
-    // 메인 프로세스에 요청하여 BrowserWindow.setIgnoreMouseEvents를 조정
+    // 메인 프로세스에 요청
     if (this.api && typeof this.api.setIgnoreMouseEvents === 'function') {
       try {
-        // 기본 옵션으로 forward:true when ignoring so renderer still receives mousemove
         const opts = options || (ignore ? { forward: true } : {});
-        this.api.setIgnoreMouseEvents(Boolean(ignore), opts);
+        this.api.setIgnoreMouseEvents(ignoreValue, opts);
       } catch (e) {
         // 안전하게 무시
       }
@@ -482,41 +514,30 @@ class AshurDesktopPlayer {
    * 이동 모드 설정
    */
   setMovementMode(enabled) {
+  console.log(`🔄 setMovementMode 호출: ${enabled}`);
+  
+  this.isMovementMode = Boolean(enabled);
 
-    // 상태 업데이트
-    this.isMovementMode = Boolean(enabled);
+  if (this.movementOverlay) {
+    this.movementOverlay.style.display = this.isMovementMode ? 'block' : 'none';
+  }
 
-    if (this.movementOverlay) {
-      this.movementOverlay.style.display = this.isMovementMode ? 'block' : 'none';
-    }
+  if (this.dragHandle) {
+    this.dragHandle.style.zIndex = this.isMovementMode ? '9998' : '1';
+    this.dragHandle.style.pointerEvents = this.isMovementMode ? 'auto' : 'none';
+  }
 
-    if (this.drafalse);
-    } else {
-      // 이동 모드 해제 시 현재 마우스 위치를 다시 검사하여 투과 여부를 결정
-      if (this.lastMouseX >= 0) {
-        this.checkTransparencyAtMouse(this.lastMouseX, this.lastMouseY);
-      }
-    }
-
-    this.log(`이동 모드: ${this.isMovementMode ? '활성화' : '비활성화'}`);
-
+  this.log(`이동 모드: ${this.isMovementMode ? '활성화' : '비활성화'}`);
   }
 
   /**
    * 크기 변경 적용 (30% ~ 100%)
    */
-    // 이동 모드일 때는 항상 마우스 이벤트를 받도록 설정
-    if (this.isMovemgHandle) {
-      this.dragHandle.style.zIndex = this.isMovementMode ? '9998' : '1';
-      this.dragHandle.style.pointerEvents = this.isMovementMode ? 'auto' : 'none';
-    }
-entMode) {
-      this.setIgnoreMouseEvents(
   setScale(scale) {
     // 범위 제한: 0.3 ~ 1.0 (30% ~ 100%)
     scale = Math.max(0.3, Math.min(1.0, scale));
     this.currentScale = scale;
-    
+
     if (this.container) {
       this.container.style.transform = `scale(${scale})`;
       this.log(`크기 변경: ${(scale * 100).toFixed(0)}%`);
@@ -527,22 +548,16 @@ entMode) {
    * 캐릭터 표시/숨김 설정
    */
   setVisibility(isVisible) {
-    this.isVisible = isVisible;
-    
-    if (this.container) {
-      this.container.style.opacity = isVisible ? '1' : '0';
-    }
-    
-    // 숨김 상태면 항상 마우스 이벤트 통과
-    if (!isVisible) {
-      this.setIgnoreMouseEvents(true);
-    } else if (!this.isMovementMode && this.lastMouseX >= 0) {
-      // 다시 표시될 때 현재 마우스 위치 체크
-      this.checkTransparencyAtMouse(this.lastMouseX, this.lastMouseY);
-    }
-    
-    this.log(`캐릭터 표시: ${isVisible ? '표시' : '숨김'}`);
+  console.log(`🔄 setVisibility 호출: ${isVisible}`);
+  
+  this.isVisible = isVisible;
+  
+  if (this.container) {
+    this.container.style.opacity = isVisible ? '1' : '0';
   }
+  
+  this.log(`캐릭터 표시: ${isVisible ? '표시' : '숨김'}`);
+}
 
   updateSettings(newSettings) {
     if (!newSettings || typeof newSettings !== 'object') {
@@ -615,6 +630,8 @@ entMode) {
   }
 
   async init() {
+    console.log('🚀 init() 함수 시작');
+    
     if (this.isInitialized) {
       this.log('이미 초기화되었습니다');
       return;
@@ -626,8 +643,13 @@ entMode) {
       this.isInitialized = true;
       this.log('✅ 초기화 완료');
       
-      // 픽셀 감지 시작
-      this.startPixelDetection();
+      console.log('🔍 픽셀 감지 시작 예약 (3초 후)...');
+      
+      // 픽셀 감지 시작 - 3초 후
+      setTimeout(() => {
+        console.log('⏰ 3초 경과 - 픽셀 감지 시작 시도');
+        this.startPixelDetection();
+      }, 3000);
       
       this.sendAnimationInfo();
       
